@@ -1,0 +1,238 @@
+---
+title: '5241'
+author: "Zongyi Liu"
+date: "2025-02-21"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+data <- read.table("communities.data", header = TRUE, sep = "")
+```
+
+
+```{r}
+data
+```
+
+```{r}
+# URL of the dataset
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/communities/communities.data"
+
+# Read the dataset into R
+data <- read.csv(url, header = FALSE)
+
+# View the first few rows
+data
+```
+
+```{r}
+# Define column names (from the dataset description)
+column_names <- c(
+  "state", "county", "community", "communityname", "fold", "population", "householdsize", 
+  "racepctblack", "racePctWhite", "racePctAsian", "racePctHisp", "agePct12t21", 
+  "agePct12t29", "agePct16t24", "agePct65up", "numbUrban", "pctUrban", "medIncome", 
+  "pctWWage", "pctWFarmSelf", "pctWInvInc", "pctWSocSec", "pctWPubAsst", "pctWRetire", 
+  "medFamInc", "perCapInc", "whitePerCap", "blackPerCap", "indianPerCap", "AsianPerCap", 
+  "OtherPerCap", "HispPerCap", "NumUnderPov", "PctPopUnderPov", "PctLess9thGrade", 
+  "PctNotHSGrad", "PctBSorMore", "PctUnemployed", "PctEmploy", "PctEmplManu", 
+  "PctEmplProfServ", "PctOccupManu", "PctOccupMgmtProf", "MalePctDivorce", "MalePctNevMarr", 
+  "FemalePctDiv", "TotalPctDiv", "PersPerFam", "PctFam2Par", "PctKids2Par", "PctYoungKids2Par", 
+  "PctTeen2Par", "PctWorkMomYoungKids", "PctWorkMom", "NumIlleg", "PctIlleg", "NumImmig", 
+  "PctImmigRecent", "PctImmigRec5", "PctImmigRec8", "PctImmigRec10", "PctRecentImmig", 
+  "PctRecImmig5", "PctRecImmig8", "PctRecImmig10", "PctSpeakEnglOnly", "PctNotSpeakEnglWell", 
+  "PctLargHouseFam", "PctLargHouseOccup", "PersPerOccupHous", "PersPerOwnOccHous", 
+  "PersPerRentOccHous", "PctPersOwnOccup", "PctPersDenseHous", "PctHousLess3BR", "MedNumBR", 
+  "HousVacant", "PctHousOccup", "PctHousOwnOcc", "PctVacantBoarded", "PctVacMore6Mos", 
+  "MedYrHousBuilt", "PctHousNoPhone", "PctWOFullPlumb", "OwnOccLowQuart", "OwnOccMedVal", 
+  "OwnOccHiQuart", "RentLowQ", "RentMedian", "RentHighQ", "MedRent", "MedRentPctHousInc", 
+  "MedOwnCostPctInc", "MedOwnCostPctIncNoMtg", "NumInShelters", "NumStreet", "PctForeignBorn", 
+  "PctBornSameState", "PctSameHouse85", "PctSameCity85", "PctSameState85", "LemasSwornFT", 
+  "LemasSwFTPerPop", "LemasSwFTFieldOps", "LemasSwFTFieldPerPop", "LemasTotalReq", 
+  "LemasTotReqPerPop", "PolicReqPerOffic", "PolicPerPop", "RacialMatchCommPol", "PctPolicWhite", 
+  "PctPolicBlack", "PctPolicHisp", "PctPolicAsian", "PctPolicMinor", "OfficAssgnDrugUnits", 
+  "NumKindsDrugsSeiz", "PolicAveOTWorked", "LandArea", "PopDens", "PctUsePubTrans", 
+  "PolicCars", "PolicOperBudg", "LemasPctPolicOnPatr", "LemasGangUnitDeploy", 
+  "LemasPctOfficDrugUn", "PolicBudgPerPop", "ViolentCrimesPerPop"
+)
+
+# Assign column names to the dataset
+colnames(data) <- column_names
+
+# View the first few rows with column names
+head(data)
+```
+
+```{r}
+library(magrittr) 
+library(dplyr)
+# Replace "?" with NA
+data[data == "?"] <- NA
+data <- data[, -c(1:5)] #data <- data[, -c(1, 5)]
+
+head(data, 60)
+```
+
+```{r}
+# Convert all columns except the first to numeric
+data[-1] <- lapply(data, function(x) as.numeric(as.character(x)))
+
+# View the structure of the dataset to confirm
+data
+```
+
+```{r}
+X <- data[, 1:122]  # First 122 columns as features
+y <- data[, 123]    # Last column as target
+model <- lm(y ~ ., data = data.frame(X, y))
+
+# View the summary of the model
+summary(model)
+
+# Extract p-values from the model summary
+p_values <- summary(model)$coefficients[, "Pr(>|t|)"]
+
+# Identify significant predictors (p-value < 0.05)
+significant_predictors <- names(p_values[p_values < 0.05])
+
+# Print significant predictors. This result is different from what I get from python, which removes all rows containing missing values.
+print(significant_predictors)
+```
+
+```{r}
+plot(model)
+```
+
+### Best Subset
+
+```{r}
+print(summary(data))
+```
+
+```{r}
+# library(leaps)
+# regfit.full = regsubsets(y ~ ., data = data.frame(X, y), really.big=T)
+# summary(regfit.full) 
+# https://rpubs.com/davoodastaraky/subset
+```
+
+### Stepwise 
+
+```{r}
+library(MASS)
+# Fit the full model 
+full.model <- lm(y ~ ., data = data.frame(X, y))
+# Stepwise regression model
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+
+### Lasso
+```{r}
+data_lasso <- na.omit(data)
+
+# y <- data_lasso %>% select(133)
+y <- data_lasso$ViolentCrimesPerPop
+X <- data.matrix(data_lasso[, -123])
+
+#perform k-fold cross-validation to find optimal lambda value
+lasso_model <- cv.glmnet(X, y, alpha = 1)
+
+#find optimal lambda value that minimizes test MSE
+best_lambda <- lasso_model$lambda.min
+best_lambda
+
+#produce plot of test MSE by lambda value
+plot(lasso_model) 
+print(lasso_model)
+# https://glmnet.stanford.edu/articles/glmnet.html
+```
+
+
+```{r}
+best_model <- glmnet(X, y, alpha = 1, lambda = best_lambda)
+coef(best_model)
+
+# No coefficient is shown for the predictor . because the lasso regression shrunk the coefficient all the way to zero. This means it was completely dropped from the model because it wasn’t influential enough.
+```
+
+```{r}
+plot(lasso_model)
+```
+```{r}
+plot(lasso_model, xvar = "lambda", label = TRUE)
+```
+
+
+### Elastic Net
+```{r}
+library(ggplot2)
+library(lattice)
+library(caret)
+library(glmnet)
+
+# data_en = na.omit(data)
+# dim(data_en)
+# glmnet doesn't work as lm does
+
+data_en <- na.omit(data)
+data_en
+```
+
+```{r}
+# Set seed for reproducibility
+set.seed(42)
+# Define cross-validation method (5-fold CV)
+cv_5 = trainControl(method = "cv", number = 5)
+
+# Train Elastic Net model
+elastic_net_model = train(
+  ViolentCrimesPerPop ~ ., 
+  data = data_en, 
+  method = "glmnet",
+  trControl = cv_5,
+  tuneLength = 10  # This helps in selecting optimal alpha and lambda
+)
+
+# Print best model
+print(elastic_net_model)
+```
+
+```{r}
+# Set seed for reproducibility
+set.seed(42)
+# Define cross-validation method (5-fold CV)
+cv_10 = trainControl(method = "cv", number = 10)
+
+# Train Elastic Net model
+elastic_net_model_2 = train(
+  ViolentCrimesPerPop ~ ., 
+  data = data_en, 
+  method = "glmnet",
+  trControl = cv_10,
+  tuneLength = 10  # This helps in selecting optimal alpha and lambda
+)
+
+# Print best model
+print(elastic_net_model_2)
+```
+
+```{r}
+get_best_result = function(caret_fit) {
+  best = which(rownames(caret_fit$results) == rownames(caret_fit$bestTune))
+  best_result = caret_fit$results[best, ]
+  rownames(best_result) = NULL
+  best_result
+}
+get_best_result(elastic_net_model_2)
+```
+
+```{r}
+get_best_result(elastic_net_model)
+```
+
