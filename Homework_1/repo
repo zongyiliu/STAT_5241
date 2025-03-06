@@ -1,0 +1,66 @@
+# Same as Homework 1
+
+from ucimlrepo import fetch_ucirepo 
+
+  
+# fetch dataset 
+communities_and_crime = fetch_ucirepo(id=183) 
+  
+# data (as pandas dataframes) 
+X = communities_and_crime.data.features 
+y = communities_and_crime.data.targets 
+  
+# metadata 
+print(communities_and_crime.metadata) 
+  
+# variable information 
+print(communities_and_crime.variables) 
+
+# Inspect the shape of X and y
+print(X.shape)  # Should be (1994, 127)
+print(y.shape)  # Should be (1994, 1)
+
+# Check for missing values
+print(X.isnull().sum())  # Count of missing values per feature
+
+# Inspect the first few rows of X and y
+print(X.head())
+print(y.head())
+
+
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+
+X = X.iloc[:, 5:]
+print(X.dtypes) # There are object columns within the data. The object data type is the default type for columns containing text (strings) in a pandas DataFrame.
+
+
+X = X.applymap(pd.to_numeric, errors='coerce')
+
+# Replace "?" with NaN
+# how to convert all coliumn to numeric in python
+X.replace("?", np.nan, inplace=True)
+
+# Check the number of missing values in each column
+print(X.isnull().sum())
+
+
+X_with_y = X.copy()  # Create a copy of X to avoid modifying the original
+X_with_y['y'] = y
+
+X_with_y
+
+# Drop rows with NaN or inf in X or y
+X_with_y_cleaned = X_with_y.dropna()
+
+X_with_y_cleaned
+
+
+# Step 1: Separate y and X
+y_new = X_with_y_cleaned['y']  # Dependent variable
+X_new = X_with_y_cleaned.drop(columns=['y'])  # Independent variables
+
+# Standardize X (centered and scaled)
+scaler = StandardScaler(with_mean=True, with_std=True)
+X_scaled = scaler.fit_transform(X_new)
